@@ -1,5 +1,28 @@
-my_dataset <- read.csv("Sampleadm.csv", stringsAsFactors = T)
+hrdata <- read.csv("Sampleadm.csv", stringsAsFactors = T)
+set.seed(1337)
 
+#Selecting a random number in a uniform distribution
+my_dataset <- hrdata[order(runif(600)), ]
+
+str(my_dataset)
+
+#Lets remove id we dont need that
+my_dataset <- my_dataset[-10]
+
+col1 <- round(runif(1)*32)+2 #the +2 protects the Age and Attrition Variables
+col2 <- round(runif(1)*31)+2
+col3 <- round(runif(1)*30)+2
+
+cols <- names(my_dataset)
+print(paste("I lost: ", cols[col1], ",", cols[col2], ",", cols[col3]))
+
+my_dataset <- my_dataset[-col1]
+my_dataset <- my_dataset[-col2]
+my_dataset <- my_dataset[-col3]
+
+write.csv(file="Emp.csv", my_dataset, row.names = F)
+
+my_dataset <- read.csv("Emp.csv", stringsAsFactors = T)
 
 str(my_dataset)
 
@@ -20,6 +43,7 @@ summary(my_dataset)
 #I'm missing levels 0 and 1 in PerformanceRating, but the rest of my categoricals seem fine
 my_dataset$PerformanceRating <- factor(my_dataset$PerformanceRating) 
 #however, as JobRole displays other, let's check more precisely
+
 table(my_dataset$JobRole)
 #because i already encoded them above, all i have to do is reinvoke the factor command and my empty levels disappear
 
@@ -37,7 +61,31 @@ boxplot(my_dataset$DailyRate)
 boxplot(my_dataset$HourlyRate)
 boxplot(my_dataset$MonthlyIncome) #possibly some here too
 
+summary(my_dataset$MonthlyRate)
 #i prefer the attrition factor as 0/1 for convenience 
 my_dataset$Attrition <- factor(my_dataset$Attrition, labels=c(0,1), levels=c("No", "Yes"))
 
-table(my_dataset$Attrition)
+#checking the class balance
+table(my_dataset$Attrition) #its imbalanced 
+
+#train and testing the dataset
+library(caret)
+sample <- createDataPartition(my_dataset$Attrition, p = .75, list = FALSE)
+train <- my_dataset[sample, ]
+test <- my_dataset[-sample, ]
+
+#Making some own assumptions:
+#Everyonestays 
+str(test$Attrition)
+b1 <- rep(0, dim(test)[1])
+(accuracyB1 <- 1 - mean(b1 != test$Attrition))
+
+#those who have higher satisfaction are less likely to leave
+str(my_dataset$JobSatisfaction)
+b2 <- rep(0, dim(test)[1])
+b2[test$JobSatisfaction == 'Low'] <- 1
+b2[test$JobSatisfaction == 'Medium'] <- 1
+(accuracyB2 <- 1 - mean(b2 != test$Attrition))
+
+
+
