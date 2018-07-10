@@ -76,7 +76,7 @@ test <- my_dataset[-sample, ]
 
 #Making some own assumptions:
 #Everyonestays 
-str(test$Attrition)
+str(test$Attrition) # remain (Y) is 0
 b1 <- rep(0, dim(test)[1])
 (accuracyB1 <- 1 - mean(b1 != test$Attrition))
 
@@ -87,5 +87,30 @@ b2[test$JobSatisfaction == 'Low'] <- 1
 b2[test$JobSatisfaction == 'Medium'] <- 1
 (accuracyB2 <- 1 - mean(b2 != test$Attrition))
 
+#work out what columns we have:
+str(subset(my_dataset, select=c(1,4,6,11,17,18,21,24,27,29:32)))
 
+#now correlation testew
+cor(subset(my_dataset, select=c(1,4,6,11,17,18,21,24,27,29:32)))
+
+str(my_dataset)
+
+#Making 2 visualization over the dependent varaible against numerical and categorical attribute
+boxplot(my_dataset$DailyRate ~ my_dataset$Attrition)
+spineplot(my_dataset$Education, my_dataset$Attrition)
+
+#Make 2 gender-based observations of the dataset
+spineplot(my_dataset$MaritalStatus, my_dataset$Attrition)
+boxplot(my_dataset$DistanceFromHome ~ my_dataset$MaritalStatus)
+
+#Is there a relationship between age and hour/day/month rate
+library(graphics)
+plot(my_dataset$Age, my_dataset$MonthlyRate, main = "Scatter plot of Age vs. Monthly Rate")
+plot(my_dataset$Age, my_dataset$DailyRate, main = "Scatter plot of Age vs. Daily Rate")
+plot(my_dataset$Age, my_dataset$HourlyRate, main = "Scatter plot of Age vs. Hourly Rate")
+
+#Pick one of the Likert scales and interpret it against the dependent variable
+(counts <- table(my_dataset$Attrition, my_dataset$JobSatisfaction))
+row.names(counts) <- c("Remained", "Left")
+barplot(counts, main="Attrition Distribution by Job Satisfaction", legend = row.names(counts))
 
