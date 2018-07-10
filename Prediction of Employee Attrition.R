@@ -103,8 +103,7 @@ spineplot(my_dataset$Education, my_dataset$Attrition)
 spineplot(my_dataset$MaritalStatus, my_dataset$Attrition)
 boxplot(my_dataset$DistanceFromHome ~ my_dataset$MaritalStatus)
 
-#Is there a relationship between age and hour/day/month rate
-library(graphics)
+#Start of Question: B4
 plot(my_dataset$Age, my_dataset$MonthlyRate, main = "Scatter plot of Age vs. Monthly Rate")
 plot(my_dataset$Age, my_dataset$DailyRate, main = "Scatter plot of Age vs. Daily Rate")
 plot(my_dataset$Age, my_dataset$HourlyRate, main = "Scatter plot of Age vs. Hourly Rate")
@@ -113,4 +112,10 @@ plot(my_dataset$Age, my_dataset$HourlyRate, main = "Scatter plot of Age vs. Hour
 (counts <- table(my_dataset$Attrition, my_dataset$JobSatisfaction))
 row.names(counts) <- c("Remained", "Left")
 barplot(counts, main="Attrition Distribution by Job Satisfaction", legend = row.names(counts))
+
+#alternative 
+barplot(counts, main="Attrition Distribution by Job Satisfaction", xlab="Job Satistfaction", col=c("lightgreen","red"), legend = rownames(counts), beside=T)
+
+
+
 
