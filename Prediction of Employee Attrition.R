@@ -88,10 +88,10 @@ b2[test$JobSatisfaction == 'Medium'] <- 1
 (accuracyB2 <- 1 - mean(b2 != test$Attrition))
 
 #work out what columns we have:
-str(subset(my_dataset, select=c(1,4,6,11,17,18,21,24,27,29:32)))
+str(subset(my_dataset, select=c(1,4,6,10,16:19,23:24,27,26:29)))
 
 #now correlation testew
-cor(subset(my_dataset, select=c(1,4,6,11,17,18,21,24,27,29:32)))
+cor(subset(my_dataset, select=c(1,4,6,10,16:19,23:24,27,26:29)))
 
 str(my_dataset)
 
@@ -116,6 +116,42 @@ barplot(counts, main="Attrition Distribution by Job Satisfaction", legend = row.
 #alternative 
 barplot(counts, main="Attrition Distribution by Job Satisfaction", xlab="Job Satistfaction", col=c("lightgreen","red"), legend = rownames(counts), beside=T)
 
+#Prediction using Algorithms
 
+#KNN Algorithm
+n<-sapply(my_dataset,function(x){is.numeric(x)})
+numerics<-my_dataset[,n]
+summary(numerics)
+normalize <- function(x) { return ((x - min(x)) / (max(x) - min(x))) }
+numericsNormal <- normalize(numerics)
+summary(numericsNormal)
+my_datasetKNN<-my_dataset[,!n]
+my_datasetKNN<-cbind(my_datasetKNN,numericsNormal)
+install.packages("dummies")
+library(dummies)
+#handle even categorical data to represent as 1 and 0
+#not taking dependent variable
+tkNN<-dummy.data.frame(my_dataset[,-2])
+summary(tkNN)
+training_KNN<-tkNN[sample,]
+testing_KNN<-tkNN[-sample,]
+
+#different ways to determine k
+k2<-round(sqrt(dim(training_KNN)[2])) #sqrt of number of attribute
+k1 <- round(sqrt(dim(testing_KNN)[1])) #sqrt of number of instances
+k3 <- 7 #a number between 3 and 10
+library(class)
+
+knn1 <- knn(train = training_KNN, test = testing_KNN, cl = train$Attrition, k=k1)
+knn2 <- knn(train = training_KNN, test = testing_KNN, cl = train$Attrition, k=k2)
+knn3 <- knn(train = training_KNN, test = testing_KNN, cl = train$Attrition, k=k3)
+
+
+#Accuracy Prediction
+(knn1Acc <- 1- mean(knn1 != test$Attrition))
+(knn2Acc <- 1- mean(knn2 != test$Attrition))
+(knn3Acc <- 1- mean(knn3 != test$Attrition))
+
+########################################################################
 
 
