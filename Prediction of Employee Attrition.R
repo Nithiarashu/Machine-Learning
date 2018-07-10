@@ -22,21 +22,22 @@ my_dataset <- my_dataset[-col3]
 
 write.csv(file="Emp.csv", my_dataset, row.names = F)
 
-my_dataset <- read.csv("Emp.csv", stringsAsFactors = T)
+my_dataset <- read.csv("Emp.csv", header = T)
 
 str(my_dataset)
 
 #let's deal with these other factors: F1
 my_dataset$Education <- factor(my_dataset$Education, levels = c(1,2,3,4,5), labels=c("BC", "C", "UG", "MSc", "PhD"))
-my_dataset$EnvironmentSatisfaction <- factor(my_dataset$EnvironmentSatisfaction, levels = c(1:4), labels=c("Low", "Medium", "High", "v. High"))
-my_dataset$JobInvolvement <- factor(my_dataset$JobInvolvement, levels = c(1:4), labels=c("Low", "Medium", "High", "v. High"))
-my_dataset$JobLevel <- factor(my_dataset$JobLevel) #insufficient information to do more
-my_dataset$JobSatisfaction <- factor(my_dataset$JobSatisfaction, levels = c(1:4), labels=c("Low", "Medium", "High", "v. High"))
+my_dataset$EnvironmentSatisfaction <- factor(my_dataset$EnvironmentSatisfaction, levels = c(1:4), labels=c("Low", "Medium", "High", " VHigh"))
+my_dataset$JobInvolvement <- factor(my_dataset$JobInvolvement, levels = c(1:4), labels=c("Low", "Medium", "High", "vHigh"))
+my_dataset$JobLevel <- as.factor(my_dataset$JobLevel) #insufficient information to do more
+my_dataset$JobSatisfaction <- factor(my_dataset$JobSatisfaction, levels = c(1:4), labels=c("Low", "Medium", "High", "vHigh"))
 my_dataset$PerformanceRating <- factor(my_dataset$PerformanceRating, levels = c(1:4), labels=c("Low", "Good", "Excellent", "Outstanding"))
-my_dataset$RelationshipSatisfaction <- factor(my_dataset$RelationshipSatisfaction, levels = c(1:4), labels=c("Low", "Medium", "High", "v. High"))
-my_dataset$StockOptionLevel <- factor(my_dataset$StockOptionLevel) #don't have more information
+my_dataset$RelationshipSatisfaction <- factor(my_dataset$RelationshipSatisfaction, levels = c(1:4), labels=c("Low", "Medium", "High", "vHigh"))
+my_dataset$StockOptionLevel <- as.factor(my_dataset$StockOptionLevel) #don't have more information
 my_dataset$WorkLifeBalance <- factor(my_dataset$WorkLifeBalance, levels = c(1:4), labels=c("Bad", "Good", "Better", "Best"))
 
+table(my_dataset$BusinessTravel)
 
 #Now to fix factors where i don't have all levels
 summary(my_dataset)
@@ -151,6 +152,19 @@ knn3 <- knn(train = training_KNN, test = testing_KNN, cl = train$Attrition, k=k3
 (knn1Acc <- 1- mean(knn1 != test$Attrition))
 (knn2Acc <- 1- mean(knn2 != test$Attrition))
 (knn3Acc <- 1- mean(knn3 != test$Attrition))
+
+########################################################################
+
+#C5.0 Algorithm Prediction- Decision Tree
+
+library(C50)
+nearZeroVar(train,saveMetrics = TRUE) #To chweck for the unwanted rows 
+cFiftyModel<-C5.0(train$Attrition~.,data = train[1:8],trails=10)
+class(cFiftyModel)
+summary(cFiftyModel)
+#plot(cFiftyModel)
+cFiftyModelPrediction<-predict(cFiftyModel,newdata=test[,-2])
+(cFiftyModelAccuracy <- mean(cFiftyModelPrediction == test$Attrition)) 
 
 ########################################################################
 
