@@ -205,5 +205,24 @@ nb <- e1071::naiveBayes(trainingNB, train$Attrition)
 nbP <- predict(nb, newdata=testingNB[,-2], type = "class")
 (nbAcc <- 1- mean(nbP != test$Attrition))
 
+###################################################################################
 
+#CART [Classification and Regression Tree]- Decision Tree
+
+library(rpart)
+install.packages("rpart.plot")
+library(rpart.plot)
+library(RColorBrewer)
+regressionTree <- rpart::rpart(Attrition ~ ., data=train, method="class")
+install.packages("rattle")
+library(rattle)
+fancyRpartPlot(regressionTree)
+rpartPrediction <- predict(regressionTree, test, type = "class")
+(CARTModelAccuracy <- mean(rpartPrediction == test$Attrition))
+
+#Pruning in CART to remove the overfit automatically 
+# what does manual pruning help in ? how is it working?
+treeToPrune <- rpart(Attrition ~ ., data=train, method="class", control=rpart.control(minsplit=,cp=0))
+prunedTree <- prp(treeToPrune,snip=TRUE)$obj
+fancyRpartPlot(prunedTree)
 
