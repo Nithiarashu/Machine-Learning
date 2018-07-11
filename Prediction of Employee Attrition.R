@@ -253,3 +253,73 @@ cForestPrediction <- predict(cForest, newdata = test)
 (cForestAccuracy <- 1 - mean(cForestPrediction != test$Attrition))
 
 ###################################################################################
+
+#K-Mean worked out but accuracy of code has to improve 
+str(my_dataset)
+my_dataset_c <- subset(my_dataset, select=c(2,3,5,7:9,11:15,20:22,25)) #isolate the categoricals
+my_dataset_k <- cbind(numerics, my_dataset_c) #put them back together (Have to take data from KNN for the numeric vaules
+
+kmeansClusters <- list()
+kmeansScores <- c()
+for (i in 3:10) {
+  clusters <- kmeans(numerics, i)
+  name <- paste0("kmeans", i)
+  kmeansClusters[[name]] <- clusters
+  kmeansScores <- rbind(kmeansScores, sum(clusters$withinss))
+}
+
+row.names(kmeansScores) <- c(3:10)
+colnames(kmeansScores) <- c("k")
+
+plot(kmeansScores, xlab="k", ylab="within groups sum of squares")
+#intuition would suggest 4 clusters... let's try another measure and find out
+#i'd have been fine with up to here as an answer, but to improve our intutition of a possibly good value for k...
+install.packages("clusterSim")
+library(clusterSim)
+kmeansScores <- c()
+for (i in 3:10) {
+  clusters <- kmeans(numerics, i)
+  name <- paste0("kmeans", i)
+  dbindex <- index.DB(numerics, clusters$cluster, centrotypes="centroids")
+  kmeansScores <- rbind(kmeansScores, dbindex$DB)
+}
+
+row.names(kmeansScores) <- c(3:10)
+colnames(kmeansScores) <- c("k")
+
+plot(kmeansScores, xlab="k", ylab="DBIndex")
+#lower is better, so it's probably not k=2; k = 5 seems ok again, 10 has also done well this time.
+
+#let's try plotting
+install.packages("fpc")
+library(fpc)
+plotcluster(numerics, kmeansClusters[["kmeans2"]]$cluster)
+plotcluster(numerics, kmeansClusters[["kmeans4"]]$cluster)
+plotcluster(numerics, kmeansClusters[["kmeans5"]]$cluster)
+plotcluster(numerics, kmeansClusters[["kmeans10"]]$cluster)
+
+#for interest (going beyond what's asked, but it's good to think about this a little) let's use the whole dataset -- we need to switch to medoids because of the categorical variables
+library(cluster)
+
+kmedoidsClusters <- list()
+kmedoidsScores <- c()
+
+gower_dist <- daisy(my_dataset_k, metric = "gower", type = list(logratio = 3))
+
+for (i in 2:20) { #for fun let's also increase the max k value as well
+  clusters <- pam(gower_dist, k=i, diss=T) #note we switched to the full set of attibutes now so need to use medoids
+  name <- paste0("kmedoids", i)
+  kmedoidsClusters[[name]] <- clusters
+  dbindex <- index.DB(gower_dist, clusters$clustering, centrotypes = "medoids", d=gower_dist)
+  kmedoidsScores <- rbind(kmedoidsScores, dbindex$DB)
+}
+
+row.names(kmedoidsScores) <- c(2:20)
+colnames(kmedoidsScores) <- c("k")
+
+plot(kmedoidsScores, xlab="k", ylab="DBIndex")
+#now k=2 (which makes sense) and k=7 are looking like good candidate values of k
+
+###################################################################################################
+
+
