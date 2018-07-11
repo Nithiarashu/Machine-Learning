@@ -226,3 +226,19 @@ treeToPrune <- rpart(Attrition ~ ., data=train, method="class", control=rpart.co
 prunedTree <- prp(treeToPrune,snip=TRUE)$obj
 fancyRpartPlot(prunedTree)
 
+###################################################################################
+
+#Random Forest
+install.packages("randomForest")
+library(randomForest)
+forest <- randomForest(Attrition ~ ., data=train, importance=TRUE, ntree=2000)
+varImpPlot(forest)
+rf <- predict(forest, test[,-2], type = "class")
+(forestAcc <- 1- mean(rf != test$Attrition))
+
+#Check for it !
+caret::confusionMatrix(rf, test$Attrition, positive = "Yes")
+
+###################################################################################
+
+
