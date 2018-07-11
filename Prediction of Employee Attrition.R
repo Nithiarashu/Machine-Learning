@@ -447,6 +447,7 @@ rect.hclust(fit, k=3, border="red")
 
 #Density Model (HAVE TO CHECK)
 ds <- dbscan(myIris, eps=.25, MinPts=5)
+str(ds)
 table(ds$cluster, my_dataset$Attrition)
 plot(ds, myIris) #myirish from KNN 
 plotcluster(myIris, ds$cluster)
@@ -454,9 +455,9 @@ plotcluster(myIris, ds$cluster)
 #Not working till model
 results <- list()
 d <- dist(myIris)
-for (i in 1:2) {
-  ds <- dbscan(myIris, eps=i/100, MinPts = 5)
-  results[[i]] <- cluster.stats(d, ds$cluster)
+for (i in 1:3) {
+  ds <- dbscan(myIris, eps=i/100, MinPts = 1)
+  results[[i]] <- cluster.stats(d,ds$cluster)
   results[[i]]$eps <- i/100
 }
 
@@ -479,24 +480,20 @@ summary(fit)
 fit$classification
 
 ####################################################################################
-
-#SVM
-
 # Importing the dataset
-#dataset = read.csv('Emp.csv')
-#dataset = dataset[3:5]#Need to check 3:5
-
+#setwd("G:\\Sem 2\\ADM\\lab")
+#dataset = read.csv('Social_Network_Ads.csv')
+dataset <- (subset(my_dataset, select=c(1,4,6,10,16:19,23,24,27,26:29)))
+str(dataset)
 # Encoding the target feature as factor
-#my_dataset$Attrition= factor(my_dataset$Attrition, levels = c(0, 1))
+dataset$Attrition = factor(dataset$Attrition, levels = c(0, 1))
 
 # Splitting the dataset into the Training set and Test set
 # install.packages('caTools')
-install.packages("caTools")
 library(caTools)
-set.seed(123)
-split = sample.split(my_dataset$Attrition, SplitRatio = 0.75)
-training_set = subset(my_dataset, split == TRUE)
-test_set = subset(my_dataset, split == FALSE)
+split = sample.split(dataset$Attrition, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
 
 # Feature Scaling
 str(training_set)
@@ -509,18 +506,18 @@ test_set[-2] = scale(test_set[-2])
 library(e1071)
 
 
-classifier = svm(formula = Purchased ~ .,
+classifier = svm(formula = Attrition ~ .,
                  data = training_set,
                  type = 'C-classification',
                  kernel = 'linear')
 
 # Predicting the Test set results
-y_pred = predict(classifier, newdata = test_set[-3])
+y_pred = predict(classifier, newdata = test_set[-2])
 
 # Making the Confusion Matrix
-cm = table(test_set[, 3], y_pred)
+cm = table(test_set[, 2], y_pred)
 
-test_set_pur<-as.factor(test_set$Purchased)
+test_set_pur<-as.factor(test_set$Attrition)
 caret :: confusionMatrix(test_set_pur,y_pred,positive='1')
 
 # Visualising the Training set results
@@ -556,23 +553,103 @@ contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
 points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
 points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
 
+#################################################################################
+
+#SVM
+library(kernlab)
+
+#we're probably going to build lots of models, so let's make a function to save time
+svmPerformance <- function(svm, testing, trueValues) {
+  p <- predict(svm, newdata=testing, type = "response")
+  accuracy <- 1-mean(p != trueValues)
+  return(accuracy)
+}
+
+svm.model <- ksvm(Attrition ~ ., data = train)
+svmPerformance(svm.model, test[,-2], test$Attrition)
+#0.8456376 -- equal to B1 :) with no effort
+
+#let's try auto-tuning
+library(e1071)
+tuned.svm = tune(svm, Attrition ~ ., data = train, kernel = "linear", ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+svm.model <- tuned.svm$best.model
+svmPerformance(svm.model, test[,-2], test$Attrition)
+#0.8456376 -- no better; no surprises really, this is a copy and paste from the titanic example
+
+#let's increase the search space -- this is pretty much try most realistic parameter settings, and hope one works -- we wouldn't need to have a search space this big! runs about 15 mins on my laptop
+tuned.svm = tune(svm, Attrition ~ ., data = train, ranges = list(gamma = 2^(-4:4), cost = 2^(-4:4), kernel = c("linear", "polynomial", "radial", "sigmoid"), degree=c(1:4)))
+#while this runs, prepare another question...
+svm.model <- tuned.svm$best.model
+bestSvmAcc <- svmPerformance(svm.model, test[,-2], test$Attrition)
+#0.885906 -- i'd say that's pretty good 
+
+delta <- bestSvmAcc - accuracyB1
+(percentageDiff <- delta / accuracyB1 * 100)
+#almost a 5% improvement
+
+#let's be a little more objective here
+b1Scores <- c()
+
+sampleRate <- 600*.25
+
+for (i in 1:1000) { #1000 samples of the b1 benchmark -- not stratified to get a non-zero sd; if this is a stratified sample the SD will likely be 0
+  test_i <- my_dataset[order(runif(sampleRate)), ]
+  b1test <- 1 - mean(b1 != test_i$Attrition)
+  b1Scores <- rbind(b1Scores, b1test)
+}
+
+mean(b1Scores)
+sd(b1Scores)
+
+((bestSvmAcc - (mean(b1Scores) + (3 * sd(b1Scores)))) > delta)
 
 #########################################################################################
 
 #PCA
+str(dataset)
+pcs <- prcomp( ~ ., data=dataset) #PCA on categoricals is hard, so let's stick to the numerical attributes
+#conveniently, for k-means (I4) and kNN (I2) we normalised the numerical data -- happy days :)
+#had we not, prcomp will do this for us using scale=T
+plot(pcs, type="l")
+#let's get the first 2 PCs
+comp <- data.frame(pcs$x[,1:2])
 
-library(ggfortify)
-df <- numeric # removes the class label: feature 5
+#so we know, from I4 that there are 2 clusters
+k <- kmeans(comp, 2)
+library(RColorBrewer)
+library(scales)
+palette(alpha(brewer.pal(9,'Set1'), 0.5))
+plot(comp, col=k$clust, pch=16)
 
-#PCA starts here
-autoplot(prcomp(df, scale. = T, center = T), data = numeric, colour = 'Species')
-screeplot(prcomp(df, scale. = T, center = T), type="lines")
-library(factoextra)
-library(FactoMineR)
-pca <- PCA(iris[, -5], scale.unit = T, ncp=3)
-fviz_screeplot(pca, addlabels = TRUE)
-fviz_pca_ind(pca, habillage = iris$Species, label="none", addEllipses = T)
+#########################################################################################
 
+#Logistic Regression 
 
+logit <- glm(train$Attrition ~.,family=binomial(link='logit'),data=train)
+summary(logit)
+anova(logit, test="Chisq")
+install.packages("pscl")
+library(pscl)
+pR2(logit)
+
+results.1.logit <- predict(logit,newdata=test[,-2],type='response')
+results.1.logit <- ifelse(results.1.logit > 0.5,1,0)
+(logitAcc1 <- 1- mean(results.1.logit != test$Attrition))
+
+results.2.logit <- predict(logit,newdata=test[,-2],type='response')
+results.2.logit <- ifelse(results.2.logit > 0.6,1,0)
+(logitAcc2 <- 1- mean(results.2.logit != test$Attrition))
+
+results.3.logit <- predict(logit,newdata=test[,-2],type='response')
+results.3.logit <- ifelse(results.3.logit > 0.75,1,0)
+(logitAcc3 <- 1- mean(results.3.logit != test$Attrition))
+
+logitAcc1 - accuracyB1 #better than benchmark
+logitAcc2 - accuracyB1 #better then benchmark
+logitAcc3 - accuracyB1 #better (but not as much as above 2) as benchmark
+
+################################################################################
+
+#Rotation Forest
 
 
