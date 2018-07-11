@@ -241,4 +241,15 @@ caret::confusionMatrix(rf, test$Attrition, positive = "Yes")
 
 ###################################################################################
 
+#Conditional Inference Trees
+library(partykit)
+install.packages("party")
+library(party)
+cTree <- ctree(Attrition ~., data=train)
+print(cTree)
+plot(cTree, type="simple")
+cForest <- cforest(Attrition ~., data=train, controls=party::cforest_unbiased(ntree=2000, mtry=3))
+cForestPrediction <- predict(cForest, newdata = test)
+(cForestAccuracy <- 1 - mean(cForestPrediction != test$Attrition))
 
+###################################################################################
