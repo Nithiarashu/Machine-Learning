@@ -68,11 +68,12 @@ my_dataset$Attrition <- factor(my_dataset$Attrition, labels=c(0,1), levels=c("No
 
 #checking the class balance
 table(my_dataset$Attrition) #its imbalanced 
-
+prop.table(table(my_dataset$Attrition))
 #train and testing the dataset
 library(caret)
 sample <- createDataPartition(my_dataset$Attrition, p = .75, list = FALSE)
 train <- my_dataset[sample, ]
+prop.table(table(train$Attrition))
 test <- my_dataset[-sample, ]
 
 #Making some own assumptions:
@@ -159,7 +160,7 @@ knn3 <- knn(train = training_KNN, test = testing_KNN, cl = train$Attrition, k=k3
 
 library(C50)
 nearZeroVar(train,saveMetrics = TRUE) #To chweck for the unwanted rows 
-cFiftyModel<-C5.0(train$Attrition~.,data = train[1:8],trails=10)
+cFiftyModel<-C5.0(train$Attrition~.,data = train,trails=10)
 class(cFiftyModel)
 summary(cFiftyModel)
 #plot(cFiftyModel)
@@ -167,5 +168,42 @@ cFiftyModelPrediction<-predict(cFiftyModel,newdata=test[,-2])
 (cFiftyModelAccuracy <- mean(cFiftyModelPrediction == test$Attrition)) 
 
 ########################################################################
+
+# Naive Bayes Alternative doing it directly 
+nb <- e1071::naiveBayes(Attrition ~., data=train)
+nbP <- predict(nb, newdata=test[,-2], type = "class")
+(nbAcc <- 1- mean(nbP != test$Attrition))
+
+#Naive Bayes Prediction 
+
+NBData<-my_dataset
+str(NBData)
+#table(NBData$ï..Age)
+NBData$StockOptionLevel<-as.factor(NBData$StockOptionLevel)
+str(NBData$StockOptionLevel)
+NBData$WorkLifeBalance<-as.factor(NBData$WorkLifeBalance)
+
+NBData$EmployeeCount<-NULL #Removing data which is not useful
+str(NBData)
+#Age
+hist(NBData$ï..Age, breaks = 30)
+install.packages("OneR")
+library(OneR)
+res1 <- bin(NBData$ï..Age, nbins = 10, method = "content", na.omit = TRUE)
+NBData<-cbind(NBData,BinnedAge=res1)
+table(NBData$BinnedAge,NBData$Over18)
+#HourlyRate
+hist(NBData$HourlyRate) #seems normally distributed
+res2 <- bin(NBData$HourlyRate, nbins = 15, method = "content", na.omit = TRUE)
+NBData<-cbind(NBData,BinnedHour=res2)
+table(NBData$BinnedHour,NBData$Department)
+#everything is now a factor/categorical data
+str(NBData)  
+trainingNB<-NBData[sample,]
+testingNB<-NBData[-sample,]
+nb <- e1071::naiveBayes(trainingNB, train$Attrition)
+nbP <- predict(nb, newdata=testingNB[,-2], type = "class")
+(nbAcc <- 1- mean(nbP != test$Attrition))
+
 
 
