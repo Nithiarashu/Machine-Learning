@@ -444,3 +444,40 @@ groups <- cutree(fit, k=3) # cut tree into 3 clusters
 rect.hclust(fit, k=3, border="red")
 
 ########################################################################################
+
+#Density Model (HAVE TO CHECK)
+ds <- dbscan(myIris, eps=.25, MinPts=5)
+table(ds$cluster, my_dataset$Attrition)
+plot(ds, myIris) #myirish from KNN 
+plotcluster(myIris, ds$cluster)
+
+#Not working till model
+results <- list()
+d <- dist(myIris)
+for (i in 1:2) {
+  ds <- dbscan(myIris, eps=i/100, MinPts = 5)
+  results[[i]] <- cluster.stats(d, ds$cluster)
+  results[[i]]$eps <- i/100
+}
+
+#prune the NULLS
+results[sapply(results, is.null)] <- NULL
+#pick what you want to plot, e.g. average silhouette width
+
+
+############################# Model Base clustering #################################
+library(mclust)
+fit <- Mclust(myIris)
+plot(fit, what = "classification") # plot results
+
+avg.silwidth <- lapply(results, FUN = function(x) {
+  return (x$avg.silwidth)
+})
+
+
+summary(fit)
+fit$classification
+
+####################################################################################
+
+#SVM
