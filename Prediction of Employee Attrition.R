@@ -1,4 +1,4 @@
-hrdata <- read.csv("Sampleadm.csv", stringsAsFactors = T)
+hrdata <- read.csv("Datavisual.csv", stringsAsFactors = T)
 set.seed(1337)
 
 #Selecting a random number in a uniform distribution
