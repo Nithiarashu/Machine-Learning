@@ -101,9 +101,10 @@ table(Predicted = pred, Actual = trainy)
 
 prob <- model %>% predict_proba(train)
 cbind(prob, Predicted_class = pred, Actual = trainy)
-  
-  
-  
-  
+
+#Renaming the file names 
+#file.rename(list.files(pattern="water_*.img"), paste0("water_", 1:700))
+
+
   
   
